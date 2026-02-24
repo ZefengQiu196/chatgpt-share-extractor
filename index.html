@@ -1,0 +1,473 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat Share Extractor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root{--bg:#f5f5f2;--surface:rgba(255,255,255,.82);--line:rgba(30,40,50,.16);--line2:rgba(30,40,50,.32);--text:#1d2329;--muted:#5d6670;--accent:#1f6aa5;--soft:rgba(31,106,165,.15);--ok:#1f8a5a;--err:#b12f2f;--r1:24px;--r2:14px;--r3:10px;--shadow:0 20px 60px rgba(18,26,34,.12)}
+    *{box-sizing:border-box} html,body{margin:0;padding:0;min-height:100%;font-family:"IBM Plex Sans","Segoe UI",sans-serif;color:var(--text);background:var(--bg)}
+    body{overflow-x:hidden}
+    .atm{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(1200px 600px at 10% -5%,rgba(253,223,189,.42),transparent 60%),radial-gradient(900px 500px at 110% 5%,rgba(182,209,238,.42),transparent 55%),radial-gradient(700px 440px at 48% 105%,rgba(189,224,203,.28),transparent 60%),linear-gradient(170deg,#f6f5f2 0%,#efefea 100%)}
+    .atm:after{content:"";position:absolute;inset:0;opacity:.25;background-image:linear-gradient(rgba(40,52,64,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(40,52,64,.045) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(circle at center,black 15%,transparent 85%)}
+    .shell{position:relative;z-index:1;width:min(1160px,calc(100vw - 40px));margin:26px auto 48px;display:grid;gap:16px}
+    .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r1);padding:20px;box-shadow:var(--shadow);backdrop-filter:blur(10px);animation:rise .6s ease both}
+    @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+    .hero{display:grid;gap:8px;background:linear-gradient(140deg,rgba(255,255,255,.92),rgba(245,251,255,.85))}
+    .badge{width:max-content;font-size:12px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line2);border-radius:999px;padding:6px 10px;color:var(--muted);background:rgba(255,255,255,.72)}
+    h1{margin:0;font-family:"Cormorant Garamond",serif;font-size:clamp(34px,5vw,58px);line-height:.95}
+    .lead{margin:0;max-width:920px;color:var(--muted);line-height:1.5}
+    .title{margin:0;font-family:"Cormorant Garamond",serif;font-size:32px;line-height:1}
+    .copy{margin:0;color:var(--muted);font-size:14px}
+    .grid3{display:grid;grid-template-columns:1.3fr auto auto;gap:10px;align-items:center}
+    .inline{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+    .input,.select{width:100%;padding:11px 12px;border:1px solid var(--line2);border-radius:var(--r3);background:rgba(255,255,255,.92);font:inherit}
+    .input:focus,.select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--soft)}
+    .btn{padding:10px 14px;border:1px solid var(--line2);border-radius:var(--r3);background:linear-gradient(160deg,#fff,#f2f4f5);font:600 14px "IBM Plex Sans",sans-serif;cursor:pointer;transition:.2s}
+    .btn:hover{transform:translateY(-1px);border-color:var(--accent);box-shadow:0 10px 24px rgba(31,106,165,.16)}
+    .btn.primary{color:#fff;border-color:#205f92;background:linear-gradient(135deg,#246ca5,#184f7b)}
+    .btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+    .modes{display:inline-flex;gap:8px;padding:6px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.6)}
+    .mode{padding:8px 18px;border:1px solid transparent;border-radius:999px;background:transparent;color:var(--muted);font-weight:600;cursor:pointer}
+    .mode.active{color:#fff;background:linear-gradient(145deg,#255c83,#1c4a6d);box-shadow:0 8px 20px rgba(25,73,108,.35)}
+    .panel{display:none;gap:14px}.panel.active{display:grid}
+    .feedback{min-height:20px;margin:0;font-size:13px}.feedback.ok{color:var(--ok)}.feedback.err{color:var(--err)}
+    .load{display:none;align-items:center;gap:10px;font-size:13px;color:var(--muted)}.load.on{display:inline-flex}
+    .spin{width:18px;height:18px;border-radius:50%;border:2px solid rgba(31,106,165,.2);border-top-color:var(--accent);animation:spin .9s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+    .box{border:1px solid var(--line);border-radius:var(--r2);background:rgba(255,255,255,.72);padding:10px;max-height:360px;overflow:auto}
+    table{width:100%;border-collapse:collapse;font-size:12px} th,td{border:1px solid rgba(52,67,82,.16);padding:8px;text-align:left;vertical-align:top;white-space:pre-wrap;line-height:1.35}
+    th{position:sticky;top:0;background:rgba(245,248,251,.95);z-index:2}
+    .drop{border:1px dashed var(--line2);border-radius:var(--r2);min-height:124px;display:grid;place-content:center;place-items:center;gap:8px;padding:16px;text-align:center;background:rgba(255,255,255,.56)}
+    .drop.drag{border-color:var(--accent);background:rgba(231,242,251,.7)}
+    .selwrap{display:none;grid-template-columns:1fr 1fr;gap:10px}.selwrap.on{display:grid}
+    .lbl{font-size:12px;color:var(--muted)}
+    .proc{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;border:1px solid var(--line);border-radius:var(--r2);padding:12px;background:rgba(255,255,255,.65)}
+    .ring{width:86px;height:86px;display:grid;place-items:center;position:relative}.ring svg{width:86px;height:86px;transform:rotate(-90deg)}
+    .trk{fill:none;stroke:rgba(37,61,82,.15);stroke-width:8}.fill{fill:none;stroke:var(--accent);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .25s}.val{position:absolute;font-size:13px;font-weight:700}
+    .log{margin:0;padding-left:18px;max-height:220px;overflow:auto;font-size:13px;line-height:1.45;color:var(--muted)} .log li.ok{color:var(--ok)} .log li.err{color:var(--err)}
+    .help{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.step{border:1px solid var(--line);border-radius:var(--r2);background:rgba(255,255,255,.66);padding:12px;display:grid;gap:6px}
+    .step h4{margin:0;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)} .step p{margin:0;font-size:13px;line-height:1.45}
+    .note{margin:0;font-size:12px;color:var(--muted)} .hidden{display:none!important}
+    @media (max-width:960px){.grid3,.inline,.selwrap,.help,.proc{grid-template-columns:1fr}.modes{width:100%}.mode{width:100%}.title{font-size:28px}}
+  </style>
+</head>
+<body>
+  <div class="atm" aria-hidden="true"></div>
+  <main class="shell">
+    <section class="hero card">
+      <span class="badge">Conversation Intelligence</span>
+      <h1>Chat Share Extractor</h1>
+      <p class="lead">Extract structured turn-by-turn records from ChatGPT share links with a polished local workflow. Choose single extraction or batch processing, then download clean spreadsheet outputs in a consistent 7-column schema.</p>
+    </section>
+    <section class="card">
+      <div class="modes" role="tablist" aria-label="Extraction mode">
+        <button id="modeSingleBtn" class="mode active" type="button" role="tab" aria-selected="true">Single Link</button>
+        <button id="modeBatchBtn" class="mode" type="button" role="tab" aria-selected="false">Batch File</button>
+      </div>
+    </section>
+    <section id="singlePanel" class="panel active card">
+      <h2 class="title">Single Link Extraction</h2>
+      <p class="copy">Paste one ChatGPT share link. The app extracts all rounds and builds an XLSX file with the 7-column format.</p>
+      <div class="inline">
+        <input id="singleLinkInput" class="input" type="text" placeholder="https://chatgpt.com/share/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" />
+        <button id="singleRunBtn" class="btn primary" type="button">Extract</button>
+      </div>
+      <div id="singleLoading" class="load"><span class="spin" aria-hidden="true"></span><span>Extracting conversation...</span></div>
+      <p id="singleFeedback" class="feedback"></p>
+      <div id="singlePreviewWrap" class="box hidden"></div>
+      <div><button id="singleDownloadBtn" class="btn" type="button" disabled>Download XLSX</button></div>
+    </section>
+    <section id="batchPanel" class="panel card">
+      <h2 class="title">Batch Extraction from Spreadsheet</h2>
+      <p class="copy">Upload an <code>.xlsx</code> or <code>.csv</code>, map your link/name columns, process rows, and export one ZIP package.</p>
+      <div id="batchDropZone" class="drop" tabindex="0" role="button" aria-label="Upload spreadsheet">
+        <strong>Drag and drop a spreadsheet here</strong>
+        <span class="note">Supported formats: .xlsx, .csv</span>
+        <button id="batchBrowseBtn" class="btn" type="button">Browse File</button>
+        <input id="batchFileInput" class="hidden" type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+      </div>
+      <p id="batchFileMeta" class="feedback"></p>
+      <div id="batchPreviewWrap" class="box hidden"></div>
+      <div id="batchSelectors" class="selwrap">
+        <div style="display:grid;gap:6px"><label class="lbl" for="batchLinkCol">Column containing share links</label><select id="batchLinkCol" class="select"></select></div>
+        <div style="display:grid;gap:6px"><label class="lbl" for="batchNameCol">Column for output filename</label><select id="batchNameCol" class="select"></select></div>
+      </div>
+      <div><button id="batchRunBtn" class="btn primary" type="button" disabled>Start Batch Extraction</button></div>
+      <div id="batchLoading" class="load"><span class="spin" aria-hidden="true"></span><span>Running batch extraction...</span></div>
+      <p id="batchFeedback" class="feedback"></p>
+      <div class="proc">
+        <div class="ring" aria-live="polite">
+          <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="trk" cx="60" cy="60" r="52"></circle><circle id="progressFill" class="fill" cx="60" cy="60" r="52"></circle></svg>
+          <span id="progressValue" class="val">0%</span>
+        </div>
+        <div><p id="progressText" class="copy">No batch process started yet.</p><ul id="batchStatusLog" class="log"></ul></div>
+      </div>
+      <div><button id="batchDownloadBtn" class="btn" type="button" disabled>Download ZIP</button></div>
+    </section>
+    <section class="card">
+      <h2 class="title">How to Get a Share Link</h2>
+      <div class="help">
+        <article class="step"><h4>Step 1</h4><p>Open your conversation in ChatGPT and click <strong>Share</strong>.</p></article>
+        <article class="step"><h4>Step 2</h4><p>Create a public link and copy the URL beginning with <code>https://chatgpt.com/share/</code>.</p></article>
+        <article class="step"><h4>Step 3</h4><p>Paste the link here or include it in your batch spreadsheet and run extraction.</p></article>
+      </div>
+      <p class="note"><strong>Privacy note:</strong> extraction is performed in-browser. Only URLs you submit are fetched through your configured proxy endpoint.</p>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script>
+    (() => {
+      "use strict";
+      const RESULT_HEADERS = ["Round","Prompt","Prompt_upload","ChatGPT's thought time","ChatGPT's thought","ChatGPT's response","ChatGPT's response code"];
+      const STATUS_HEADERS = ["Name.dot","Link","Status","Reason","Round_count"];
+      const SHARE_LINK_REGEX = /^https:\/\/chatgpt\.com\/share\/[A-Za-z0-9-]+\/?(?:\?.*)?$/;
+      const PAYLOAD_REGEX = /window\.__reactRouterContext\.streamController\.enqueue\("(\[.*?\])\\n"\);/s;
+      const CODE_BLOCK_REGEX = /```(?:[\w.+-]+)?\n([\s\S]*?)```/g;
+      const LOCAL_PROXY_BASE = "http://127.0.0.1:8787";
+      // Site admin: replace with your production proxy URL once, then redeploy.
+      const FIXED_PROXY_BASE = "https://chat-share-proxy.404251162qzf.workers.dev";
+      const PROXY_PLACEHOLDER_TOKEN = "REPLACE_WITH_YOUR_WORKER";
+      const state = {mode:"single",singleRows:null,singleFileName:null,batchTable:null,batchZipBlob:null};
+      const refs = {
+        modeSingleBtn:document.getElementById("modeSingleBtn"),modeBatchBtn:document.getElementById("modeBatchBtn"),singlePanel:document.getElementById("singlePanel"),batchPanel:document.getElementById("batchPanel"),
+        singleLinkInput:document.getElementById("singleLinkInput"),singleRunBtn:document.getElementById("singleRunBtn"),singleLoading:document.getElementById("singleLoading"),singleFeedback:document.getElementById("singleFeedback"),singlePreviewWrap:document.getElementById("singlePreviewWrap"),singleDownloadBtn:document.getElementById("singleDownloadBtn"),
+        batchDropZone:document.getElementById("batchDropZone"),batchBrowseBtn:document.getElementById("batchBrowseBtn"),batchFileInput:document.getElementById("batchFileInput"),batchFileMeta:document.getElementById("batchFileMeta"),batchPreviewWrap:document.getElementById("batchPreviewWrap"),batchSelectors:document.getElementById("batchSelectors"),batchLinkCol:document.getElementById("batchLinkCol"),batchNameCol:document.getElementById("batchNameCol"),batchRunBtn:document.getElementById("batchRunBtn"),batchLoading:document.getElementById("batchLoading"),batchFeedback:document.getElementById("batchFeedback"),batchStatusLog:document.getElementById("batchStatusLog"),batchDownloadBtn:document.getElementById("batchDownloadBtn"),progressFill:document.getElementById("progressFill"),progressValue:document.getElementById("progressValue"),progressText:document.getElementById("progressText")
+      };
+      const progressRadius = 52;
+      const progressCircumference = 2 * Math.PI * progressRadius;
+      refs.progressFill.style.strokeDasharray = String(progressCircumference);
+      refs.progressFill.style.strokeDashoffset = String(progressCircumference);
+      wireEvents();
+      setMode("single");
+      if(!hasConfiguredProxy()){
+        setFeedback(refs.singleFeedback,"Service endpoint is not configured by the site admin yet.","err");
+      } else if(isLocalHost()){
+        setFeedback(refs.singleFeedback,`Local mode detected. Using proxy ${getProxyBase()}`,"");
+      }
+
+      function wireEvents(){
+        refs.modeSingleBtn.addEventListener("click",()=>setMode("single"));
+        refs.modeBatchBtn.addEventListener("click",()=>setMode("batch"));
+        refs.singleRunBtn.addEventListener("click",runSingleExtraction);
+        refs.singleLinkInput.addEventListener("keydown",(e)=>{if(e.key==="Enter"){e.preventDefault();runSingleExtraction();}});
+        refs.singleDownloadBtn.addEventListener("click",()=>{if(!state.singleRows||!state.singleFileName)return;const b=buildWorkbookBuffer(state.singleRows,state.singleFileName,RESULT_HEADERS);downloadArrayBuffer(b,`${state.singleFileName}.xlsx`,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");});
+        refs.batchBrowseBtn.addEventListener("click",()=>refs.batchFileInput.click());
+        refs.batchFileInput.addEventListener("change",(e)=>{const f=e.target.files&&e.target.files[0];if(f)loadBatchFile(f);});
+        refs.batchDropZone.addEventListener("dragover",(e)=>{e.preventDefault();refs.batchDropZone.classList.add("drag");});
+        refs.batchDropZone.addEventListener("dragleave",()=>refs.batchDropZone.classList.remove("drag"));
+        refs.batchDropZone.addEventListener("drop",(e)=>{e.preventDefault();refs.batchDropZone.classList.remove("drag");const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f){refs.batchFileInput.value="";loadBatchFile(f);}});
+        refs.batchLinkCol.addEventListener("change",updateBatchRunAvailability);
+        refs.batchNameCol.addEventListener("change",updateBatchRunAvailability);
+        refs.batchRunBtn.addEventListener("click",runBatchExtraction);
+        refs.batchDownloadBtn.addEventListener("click",()=>{if(!state.batchZipBlob)return;downloadBlob(state.batchZipBlob,`chat-share-results-${timeStampString()}.zip`);});
+      }
+
+      function setMode(mode){
+        state.mode=mode; const s=mode==="single";
+        refs.modeSingleBtn.classList.toggle("active",s); refs.modeBatchBtn.classList.toggle("active",!s);
+        refs.modeSingleBtn.setAttribute("aria-selected",String(s)); refs.modeBatchBtn.setAttribute("aria-selected",String(!s));
+        refs.singlePanel.classList.toggle("active",s); refs.batchPanel.classList.toggle("active",!s);
+      }
+
+      function normalizeProxyBase(raw){return String(raw||"").trim().replace(/\/+$/,"");}
+      function isLocalHost(){const h=String(window.location.hostname||"").toLowerCase(); return h==="localhost"||h==="127.0.0.1"||h==="[::1]";}
+      function getProxyBase(){return normalizeProxyBase(isLocalHost()?LOCAL_PROXY_BASE:FIXED_PROXY_BASE);}
+      function hasConfiguredProxy(){const base=getProxyBase(); if(!base||!/^https?:\/\//i.test(base)) return false; if(!isLocalHost()&&base.includes(PROXY_PLACEHOLDER_TOKEN)) return false; return true;}
+
+      async function runSingleExtraction(){
+        const link=String(refs.singleLinkInput.value||"").trim(); clearSingleOutput();
+        if(!link){setFeedback(refs.singleFeedback,"Please enter a share link.","err");return;}
+        if(!isValidShareLink(link)){setFeedback(refs.singleFeedback,"Link must be in format https://chatgpt.com/share/...","err");return;}
+        if(!hasConfiguredProxy()){setFeedback(refs.singleFeedback,"Service endpoint is not configured by the site admin yet.","err");return;}
+        refs.singleRunBtn.disabled=true; refs.singleLoading.classList.add("on"); setFeedback(refs.singleFeedback,"","");
+        try{
+          const rows=await extractRowsFromShareLink(link); if(!rows.length) throw new Error("No rounds extracted from this conversation.");
+          const fn=buildSingleFileNameFromLink(link); state.singleRows=rows; state.singleFileName=fn;
+          renderTable(refs.singlePreviewWrap,RESULT_HEADERS,rows,40); refs.singlePreviewWrap.classList.remove("hidden"); refs.singleDownloadBtn.disabled=false;
+          setFeedback(refs.singleFeedback,`Extraction completed. ${rows.length} rounds ready for download.`,"ok");
+        } catch(err){setFeedback(refs.singleFeedback,cleanError(err),"err");}
+        finally{refs.singleRunBtn.disabled=false; refs.singleLoading.classList.remove("on");}
+      }
+
+      function clearSingleOutput(){state.singleRows=null; state.singleFileName=null; refs.singleDownloadBtn.disabled=true; refs.singlePreviewWrap.innerHTML=""; refs.singlePreviewWrap.classList.add("hidden");}
+
+      async function loadBatchFile(file){
+        resetBatchUIForNewFile(); const name=file.name||"uploaded-file"; setFeedback(refs.batchFileMeta,`Reading ${name}...`,"");
+        try{
+          const table=await parseFileToTable(file); if(!table.headers.length) throw new Error("No header row detected."); if(!table.rows.length) throw new Error("The file contains no data rows.");
+          state.batchTable=table; setFeedback(refs.batchFileMeta,`Loaded ${name}: ${table.rows.length} rows, ${table.headers.length} columns.`,"ok");
+          renderTable(refs.batchPreviewWrap,table.headers,table.rows,12); refs.batchPreviewWrap.classList.remove("hidden");
+          populateBatchSelectors(table); refs.batchSelectors.classList.add("on"); updateBatchRunAvailability();
+        } catch(err){state.batchTable=null; setFeedback(refs.batchFileMeta,cleanError(err),"err");}
+      }
+
+      function resetBatchUIForNewFile(){
+        state.batchZipBlob=null; refs.batchDownloadBtn.disabled=true; refs.batchFeedback.textContent=""; refs.batchFeedback.className="feedback";
+        refs.batchStatusLog.innerHTML=""; refs.batchPreviewWrap.innerHTML=""; refs.batchPreviewWrap.classList.add("hidden"); refs.batchSelectors.classList.remove("on");
+        refs.batchRunBtn.disabled=true; refs.progressText.textContent="No batch process started yet."; setProgress(0,0);
+      }
+
+      function populateBatchSelectors(table){
+        const headers=table.headers; refs.batchLinkCol.innerHTML=""; refs.batchNameCol.innerHTML="";
+        for(const h of headers){const o1=document.createElement("option");o1.value=h;o1.textContent=h;refs.batchLinkCol.appendChild(o1);const o2=document.createElement("option");o2.value=h;o2.textContent=h;refs.batchNameCol.appendChild(o2);}
+        const idx=document.createElement("option"); idx.value="__row_index__"; idx.textContent="Use row index (1, 2, 3, ...)"; refs.batchNameCol.insertBefore(idx,refs.batchNameCol.firstChild);
+        const gl=guessLinkColumn(table); if(gl) refs.batchLinkCol.value=gl; const gn=guessNameColumn(table); refs.batchNameCol.value=gn||"__row_index__";
+      }
+
+      function updateBatchRunAvailability(){const ok=Boolean(state.batchTable&&state.batchTable.rows&&state.batchTable.rows.length&&refs.batchLinkCol.value&&refs.batchNameCol.value); refs.batchRunBtn.disabled=!ok;}
+      async function runBatchExtraction(){
+        if(!state.batchTable){setFeedback(refs.batchFeedback,"Upload a file first.","err");return;}
+        if(!hasConfiguredProxy()){setFeedback(refs.batchFeedback,"Service endpoint is not configured by the site admin yet.","err");return;}
+        const linkColumn=refs.batchLinkCol.value; const nameColumn=refs.batchNameCol.value;
+        if(!linkColumn||!nameColumn){setFeedback(refs.batchFeedback,"Please choose both columns before running.","err");return;}
+
+        refs.batchRunBtn.disabled=true; refs.batchLoading.classList.add("on"); refs.batchDownloadBtn.disabled=true; refs.batchStatusLog.innerHTML=""; setFeedback(refs.batchFeedback,"","");
+
+        const rows=state.batchTable.rows; const total=rows.length; const zip=new JSZip(); const results=zip.folder("results"); const statusRows=[]; const used=new Set();
+        let processed=0, success=0;
+        refs.progressText.textContent=`Processing 0 / ${total} rows...`; setProgress(0,total);
+
+        for(let i=0;i<total;i+=1){
+          const src=rows[i]; const link=String(src[linkColumn]||"").trim(); const rawName=nameColumn==="__row_index__"?String(i+1):String(src[nameColumn]||"").trim();
+          const stem=uniqueStem(sanitizeFileStem(rawName,`row_${i+1}`),used);
+          let status="failed", reason="", roundCount=0;
+
+          if(!link){reason="missing_link";}
+          else if(!isValidShareLink(link)){reason="invalid_share_link";}
+          else {
+            try{
+              const extracted=await extractRowsFromShareLink(link); roundCount=extracted.length;
+              const wb=buildWorkbookBuffer(extracted,stem,RESULT_HEADERS); results.file(`${stem}.xlsx`,wb);
+              status="success"; reason=""; success+=1;
+            } catch(err){reason=classifyReason(err);}
+          }
+
+          statusRows.push({"Name.dot":stem,"Link":link,"Status":status,"Reason":reason,"Round_count":roundCount});
+          appendStatusLine(status==="success"?"ok":"err",`[${i+1}/${total}] ${stem} - ${status}${reason?` (${reason})`:""}`);
+
+          processed+=1; refs.progressText.textContent=`Processing ${processed} / ${total} rows...`; setProgress(processed,total);
+          await yieldToUi();
+        }
+
+        const statusWb=buildWorkbookBuffer(statusRows,"status",STATUS_HEADERS); zip.file("status.xlsx",statusWb);
+        refs.progressText.textContent="Packaging ZIP archive...";
+        state.batchZipBlob=await zip.generateAsync({type:"blob"});
+        refs.batchDownloadBtn.disabled=false; refs.batchDownloadBtn.textContent=`Download ZIP (${success} success / ${total})`;
+
+        const fail=total-success;
+        if(fail===0) setFeedback(refs.batchFeedback,`Batch completed. ${success} rows succeeded.`,"ok");
+        else setFeedback(refs.batchFeedback,`Batch completed. ${success} succeeded, ${fail} failed. Check status.xlsx in the ZIP.`,"err");
+
+        refs.progressText.textContent=`Done. ${success} success, ${fail} failed.`;
+        celebrate();
+        refs.batchLoading.classList.remove("on"); refs.batchRunBtn.disabled=false;
+      }
+
+      function parseFileToTable(file){const n=(file.name||"").toLowerCase(); if(n.endsWith(".csv")) return parseCsvFile(file); if(n.endsWith(".xlsx")) return parseXlsxFile(file); throw new Error("Unsupported file format. Use .xlsx or .csv");}
+
+      function parseCsvFile(file){
+        return new Promise((resolve,reject)=>{
+          Papa.parse(file,{skipEmptyLines:true,complete:(res)=>{try{if(!res||!Array.isArray(res.data)||!res.data.length){reject(new Error("CSV file is empty."));return;} const aoa=res.data.map((r)=>Array.isArray(r)?r:[r]); resolve(aoaToTable(aoa));}catch(err){reject(err);}},error:(err)=>reject(err)});
+        });
+      }
+
+      async function parseXlsxFile(file){
+        const buf=await file.arrayBuffer(); const wb=XLSX.read(buf,{type:"array"}); if(!wb.SheetNames.length) throw new Error("Workbook contains no sheets.");
+        const ws=wb.Sheets[wb.SheetNames[0]]; const aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:""}); if(!aoa.length) throw new Error("Workbook first sheet is empty.");
+        return aoaToTable(aoa);
+      }
+
+      function aoaToTable(aoa){
+        const headers=normalizeHeaders(Array.isArray(aoa[0])?aoa[0]:[]); const rows=[];
+        for(let i=1;i<aoa.length;i+=1){const cells=Array.isArray(aoa[i])?aoa[i]:[]; const obj={}; let has=false;
+          for(let j=0;j<headers.length;j+=1){const v=cells[j]==null?"":String(cells[j]); obj[headers[j]]=v; if(v.trim()!=="") has=true;}
+          if(has) rows.push(obj);
+        }
+        return {headers,rows};
+      }
+
+      function normalizeHeaders(raw){
+        const seen=new Map();
+        return raw.map((c,i)=>{const init=String(c==null?"":c).trim()||`Column_${i+1}`; const cnt=seen.get(init)||0; seen.set(init,cnt+1); return cnt===0?init:`${init}_${cnt+1}`;});
+      }
+
+      function guessLinkColumn(table){
+        const {headers,rows}=table;
+        for(const h of headers){if(/link|url|share/i.test(h)) return h;}
+        for(const h of headers){const vals=rows.slice(0,20).map((r)=>String(r[h]||"").trim()); if(vals.some((v)=>isValidShareLink(v))) return h;}
+        return headers[0]||"";
+      }
+
+      function guessNameColumn(table){for(const h of table.headers){if(/name\.dot|name|student|id/i.test(h)) return h;} return "__row_index__";}
+      function setProgress(done,total){const ratio=total>0?Math.min(1,Math.max(0,done/total)):0; refs.progressFill.style.strokeDashoffset=String(progressCircumference*(1-ratio)); refs.progressValue.textContent=`${Math.round(ratio*100)}%`;}
+      function appendStatusLine(kind,msg){const li=document.createElement("li"); li.className=kind; li.textContent=msg; refs.batchStatusLog.appendChild(li); refs.batchStatusLog.scrollTop=refs.batchStatusLog.scrollHeight;}
+      function setFeedback(el,text,kind){el.textContent=text||""; el.className="feedback"; if(kind) el.classList.add(kind);}
+
+      function renderTable(container,headers,rows,maxRows){
+        const safe=Array.isArray(headers)?headers:[]; const limit=typeof maxRows==="number"?maxRows:rows.length; const clip=rows.slice(0,limit);
+        const table=document.createElement("table"); const thead=document.createElement("thead"); const trh=document.createElement("tr");
+        for(const h of safe){const th=document.createElement("th"); th.textContent=h; trh.appendChild(th);} thead.appendChild(trh); table.appendChild(thead);
+        const tbody=document.createElement("tbody");
+        for(const row of clip){const tr=document.createElement("tr"); for(const h of safe){const td=document.createElement("td"); td.textContent=String(row[h]==null?"":row[h]); tr.appendChild(td);} tbody.appendChild(tr);} table.appendChild(tbody);
+        container.innerHTML=""; container.appendChild(table);
+        if(rows.length>clip.length){const note=document.createElement("p"); note.className="note"; note.textContent=`Preview is limited to first ${clip.length} rows (total ${rows.length}).`; container.appendChild(note);}
+      }
+
+      function sanitizeSheetName(raw){const t=String(raw||"Sheet1").replace(/[\\/?*\[\]:]/g,"_").trim(); return (t||"Sheet1").slice(0,31);}
+      function cleanCellText(value){
+        if(value==null) return "";
+        const text=String(value);
+        return text.replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F]/g,"");
+      }
+      function buildWorkbookBuffer(rows,sheetName,headers){const h=headers.slice(); const aoa=[h.map((k)=>cleanCellText(k))]; for(const row of rows){aoa.push(h.map((k)=>cleanCellText(row[k])));} const ws=XLSX.utils.aoa_to_sheet(aoa); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,sanitizeSheetName(sheetName)); return XLSX.write(wb,{type:"array",bookType:"xlsx"});}
+      function sanitizeFileStem(raw,fallback){const base=String(raw||"").trim()||fallback; const clean=base.replace(/[<>:"/\\|?*\x00-\x1F]/g,"_").replace(/\s+/g," ").trim(); return (clean||fallback).slice(0,120);}
+      function uniqueStem(stem,used){if(!used.has(stem)){used.add(stem); return stem;} let i=2; while(used.has(`${stem}_${i}`)) i+=1; const v=`${stem}_${i}`; used.add(v); return v;}
+      function buildSingleFileNameFromLink(link){const m=link.match(/\/share\/([A-Za-z0-9-]+)/i); return sanitizeFileStem(m?m[1]:`chat-share-${timeStampString()}`,"chat-share-result");}
+      function timeStampString(){const d=new Date(); const p=(n)=>String(n).padStart(2,"0"); return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;}
+      function downloadArrayBuffer(buf,name,mime){downloadBlob(new Blob([buf],{type:mime}),name);} function downloadBlob(blob,name){const u=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=u; a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(u);}
+      async function yieldToUi(){await new Promise((r)=>setTimeout(r,0));}
+      function celebrate(){
+        if(typeof confetti!=="function") return;
+        const end=Date.now()+1100; const colors=["#2f6e9f","#3c8bc5","#f4a261","#2a9d8f","#e76f51"];
+        (function frame(){
+          confetti({particleCount:7,spread:70,origin:{x:.22,y:.75},colors});
+          confetti({particleCount:7,spread:70,origin:{x:.78,y:.75},colors});
+          if(Date.now()<end) requestAnimationFrame(frame);
+        })();
+      }
+
+      function cleanError(err){if(!err) return "Unknown error."; return typeof err==="string"?err:(err.message||String(err));}
+      function classifyReason(err){const m=cleanError(err); if(/payload_not_found/i.test(m)) return "payload_not_found"; if(/payload_json_decode_failed/i.test(m)) return "payload_json_decode_failed"; if(/conversation_keys_missing/i.test(m)) return "conversation_keys_missing"; if(/conversation_object_missing/i.test(m)) return "conversation_object_missing"; if(/mapping_missing/i.test(m)) return "mapping_missing"; if(/current_node_missing/i.test(m)) return "current_node_missing"; if(/proxy/i.test(m)||/fetch/i.test(m)) return `proxy_error:${m}`; return m;}
+      function isValidShareLink(link){return SHARE_LINK_REGEX.test(String(link||"").trim());}
+
+      async function fetchShareHtmlViaProxy(shareUrl,timeoutMs=45000){
+        const proxyBase=getProxyBase(); if(!hasConfiguredProxy()) throw new Error("Service endpoint is not configured by the site admin yet.");
+        const endpoint=`${proxyBase}/fetch?url=${encodeURIComponent(shareUrl)}`; const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),timeoutMs);
+        try{const res=await fetch(endpoint,{method:"GET",signal:controller.signal}); const text=await res.text(); if(!res.ok) throw new Error(`Proxy request failed (${res.status}): ${text.slice(0,180)}`); return text;}
+        catch(err){if(err&&err.name==="AbortError") throw new Error("Proxy request timed out."); throw err;}
+        finally{clearTimeout(timer);}
+      }
+
+      async function extractRowsFromShareLink(shareUrl){const html=await fetchShareHtmlViaProxy(shareUrl); const payload=decodePayload(html); const conv=resolveConversation(payload); const chain=collectMainChain(conv); return extractRoundRows(chain);}
+
+      function decodePayload(html){
+        const match=html.match(PAYLOAD_REGEX); if(!match) throw new Error("payload_not_found");
+        const escaped=match[1]; let raw;
+        try{raw=JSON.parse(`"${escaped}"`);}catch(_){throw new Error("payload_string_decode_failed");}
+        let payload; try{payload=JSON.parse(raw);}catch(_){throw new Error("payload_json_decode_failed");}
+        if(!Array.isArray(payload)) throw new Error("payload_not_list");
+        return payload;
+      }
+
+      function resolveConversation(payload){
+        const iMap=payload.indexOf("mapping"), iCur=payload.indexOf("current_node"), iCid=payload.indexOf("conversation_id");
+        if(iMap<0||iCur<0||iCid<0) throw new Error("conversation_keys_missing");
+        const kMap=`_${iMap}`, kCur=`_${iCur}`, kCid=`_${iCid}`;
+        let convIndex=-1;
+        for(let i=0;i<payload.length;i+=1){const v=payload[i]; if(!v||typeof v!=="object"||Array.isArray(v)) continue; if(kMap in v && kCur in v && kCid in v){convIndex=i; break;}}
+        if(convIndex<0) throw new Error("conversation_object_missing");
+
+        const cache=new Map();
+        const resolveRef=(ref)=>{if(ref===-5) return null; if(Number.isInteger(ref)&&ref>=0&&ref<payload.length) return resolveIndex(ref); return ref;};
+        const resolveIndex=(index)=>{
+          if(cache.has(index)) return cache.get(index);
+          const value=payload[index];
+          if(Array.isArray(value)){const out=value.map((x)=>resolveRef(x)); cache.set(index,out); return out;}
+          if(value&&typeof value==="object"){
+            const out={}; cache.set(index,out);
+            for(const [key,ref] of Object.entries(value)){
+              let realKey=key;
+              if(/^_\d+$/.test(key)){const ki=Number(key.slice(1)); if(Number.isInteger(ki)&&ki>=0&&ki<payload.length) realKey=payload[ki];}
+              out[String(realKey)] = resolveRef(ref);
+            }
+            return out;
+          }
+          cache.set(index,value); return value;
+        };
+
+        const conversation=resolveIndex(convIndex);
+        if(!conversation||typeof conversation!=="object"||Array.isArray(conversation)) throw new Error("conversation_resolve_failed");
+        return conversation;
+      }
+
+      function collectMainChain(conversation){
+        const mapping=conversation.mapping, current=conversation.current_node;
+        if(!mapping||typeof mapping!=="object"||Array.isArray(mapping)) throw new Error("mapping_missing");
+        if(typeof current!=="string") throw new Error("current_node_missing");
+
+        const chain=[]; const seen=new Set(); let nodeId=current;
+        while(nodeId && !seen.has(nodeId) && Object.prototype.hasOwnProperty.call(mapping,nodeId)){
+          seen.add(nodeId);
+          const node=mapping[nodeId]; const msg=node&&typeof node==="object"?node.message:null;
+          if(msg&&typeof msg==="object"&&!Array.isArray(msg)){
+            const author=msg.author&&typeof msg.author==="object"?msg.author:{};
+            const role=author.role; const createTime=msg.create_time; const recipient=msg.recipient;
+            const content=msg.content&&typeof msg.content==="object"?msg.content:{};
+            const ctype=content.content_type; const parts=Array.isArray(content.parts)?content.parts:[]; const text=parts.filter((p)=>typeof p==="string").join("\n");
+            const metadata=msg.metadata&&typeof msg.metadata==="object"?msg.metadata:{};
+            const metaAtt=Array.isArray(metadata.attachments)?metadata.attachments:[]; const dirAtt=Array.isArray(msg.attachments)?msg.attachments:[]; const att=metaAtt.length?metaAtt:dirAtt;
+            const uploads=[]; for(const item of att){if(item&&typeof item==="object"&&typeof item.name==="string"){const clean=item.name.trim(); if(clean) uploads.push(clean);}}
+            const thoughtItemsRaw=Array.isArray(content.thoughts)?content.thoughts:[];
+            const thoughtItems=thoughtItemsRaw.filter((it)=>it&&typeof it==="object").map((it)=>({summary:typeof it.summary==="string"?it.summary.trim():"",content:typeof it.content==="string"?it.content.trim():""}));
+            let duration=null; if(typeof metadata.finished_duration_sec==="number") duration=metadata.finished_duration_sec; else if(typeof metadata.finished_duration_sec==="string"){const parsed=Number(metadata.finished_duration_sec.trim()); duration=Number.isFinite(parsed)?parsed:null;}
+            const recapText=typeof content.content==="string"?content.content.trim():"";
+            chain.push({role,recipient,content_type:ctype,create_time:createTime,text,uploads,thought_items:thoughtItems,reasoning_duration_sec:duration,reasoning_recap_text:recapText});
+          }
+          nodeId=node&&typeof node==="object"&&typeof node.parent==="string"?node.parent:"";
+        }
+
+        const ordered=chain.reverse().filter((it)=>Number.isFinite(it.create_time)); if(!ordered.length) throw new Error("empty_chain"); return ordered;
+      }
+
+      function extractRoundRows(chain){
+        const rounds=[]; let current=null;
+        for(const msg of chain){
+          const role=msg.role; const text=String(msg.text||"").trim();
+          if(role==="user"&&text){if(current) rounds.push(current); const upload=Array.isArray(msg.uploads)&&msg.uploads.length?msg.uploads.join("; "):"None"; current={prompt:text,prompt_upload:upload,responses:[],thought_blocks:[],thought_times:[]}; continue;}
+          if(!current) continue;
+          const visible=role==="assistant"&&msg.recipient==="all"&&["text","thoughts","reasoning_recap"].includes(msg.content_type); if(!visible) continue;
+          if(msg.content_type==="text"&&text){current.responses.push(text); continue;}
+          if(msg.content_type==="thoughts"){const items=Array.isArray(msg.thought_items)?msg.thought_items:[]; for(const it of items){const summary=String(it.summary||"").trim(); const detail=String(it.content||"").trim(); const block=summary&&detail?`${summary}\n${detail}`:(summary||detail); if(block) current.thought_blocks.push(block);} continue;}
+          if(msg.content_type==="reasoning_recap"){const d=formatDurationText(msg.reasoning_duration_sec,msg.reasoning_recap_text); if(d) current.thought_times.push(d);}
+        }
+        if(current) rounds.push(current);
+
+        const out=[];
+        for(let i=0;i<rounds.length;i+=1){const r=rounds[i]; const response=r.responses.join("\n\n").trim(); const thoughtTime=r.thought_times.length?r.thought_times.join("; "):"None"; const thoughtText=buildThoughtText(r.thought_blocks,r.thought_times);
+          out.push({"Round":i+1,"Prompt":r.prompt,"Prompt_upload":r.prompt_upload,"ChatGPT's thought time":thoughtTime,"ChatGPT's thought":thoughtText,"ChatGPT's response":response,"ChatGPT's response code":extractCodeBlocks(response)});
+        }
+        return out;
+      }
+
+      function formatDurationText(duration,recap){
+        if(typeof duration==="number"&&Number.isFinite(duration)){if(Number.isInteger(duration)) return `${duration}s`; return `${duration.toFixed(2).replace(/\.0+$/,"").replace(/(\.\d*[1-9])0+$/,"$1")}s`;}
+        if(typeof recap==="string"){const m=recap.trim().match(/thought\s+for\s+([0-9]+(?:\.[0-9]+)?)\s*(?:s|seconds?)/i); if(m){const v=Number(m[1]); if(Number.isFinite(v)){if(Number.isInteger(v)) return `${v}s`; return `${v.toFixed(2).replace(/\.0+$/,"").replace(/(\.\d*[1-9])0+$/,"$1")}s`;}}}
+        return "";
+      }
+
+      function buildThoughtText(blocks,times){
+        const b=(Array.isArray(blocks)?blocks:[]).map((x)=>String(x||"").trim()).filter(Boolean);
+        const t=(Array.isArray(times)?times:[]).map((x)=>String(x||"").trim()).filter(Boolean);
+        if(!b.length&&!t.length) return "None";
+        const segments=[];
+        for(let i=0;i<b.length;i+=1){let seg=b[i]; if(i<t.length) seg += `\n\nThought for ${t[i]}\nDone`; segments.push(seg);}
+        if(t.length>b.length){for(let i=b.length;i<t.length;i+=1) segments.push(`Thought for ${t[i]}\nDone`);}
+        return segments.join("\n\n")||"None";
+      }
+
+      function extractCodeBlocks(text){
+        if(!text) return "";
+        const blocks=[]; let m;
+        while((m=CODE_BLOCK_REGEX.exec(text))!==null){const body=String(m[1]||"").replace(/^\n+|\n+$/g,""); if(body.trim()) blocks.push(body);} CODE_BLOCK_REGEX.lastIndex=0;
+        return blocks.join("\n\n");
+      }
+    })();
+  </script>
+</body>
+</html>
