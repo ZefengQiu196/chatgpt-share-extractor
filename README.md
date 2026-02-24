@@ -1,13 +1,12 @@
-# Chat Share Extractor Frontend
+# ChatGPT Share Extractor Frontend
 
 Static frontend for extracting ChatGPT share conversations into spreadsheets.
 
 ## Files
 
-- `frontend/index.html`: full UI + extraction logic (no build step).
-- `frontend/worker/cloudflare-worker.js`: proxy template for CORS-safe fetching.
-- `frontend/worker/README.md`: step-by-step Worker setup guide.
-- `index.html` (repo root): redirect entry for GitHub Pages root publish mode.
+- `index.html`: full UI + extraction logic (no build step).
+-  `scripts/local_chat_share_proxy.py`: local Python proxy for `/fetch` during local testing.
+- `README.md`: step-by-step Worker setup guide.
 
 ## Output Format
 
@@ -26,6 +25,24 @@ Batch ZIP output always contains:
 1. `results/<name>.xlsx` files
 2. `status.xlsx` with strict columns: `Name.dot`, `Link`, `Status`, `Reason`, `Round_count`
 
+## Local Proxy Script (`scripts/local_chat_share_proxy.py`)
+
+Purpose:
+1. Provides local CORS-safe proxy endpoint for the frontend.
+2. Restricts target URLs to `https://chatgpt.com/share/...`.
+3. Supports local origin allowlist and basic retries.
+
+Endpoints:
+1. `GET /health` -> returns `{"ok": true}`
+2. `GET /fetch?url=<encoded_chatgpt_share_url>` -> returns fetched HTML
+
+Common options:
+1. `--host` (default `127.0.0.1`)
+2. `--port` (default `8787`)
+3. `--allowed-origins` (comma-separated, default includes `localhost/127.0.0.1` on ports `5500`, `5501`, `8000`)
+4. `--timeout` (default `35`)
+5. `--retries` (default `3`)
+   
 ## Local Run (No Deploy)
 
 From repo root:
@@ -44,22 +61,12 @@ Open: `http://localhost:8000/`
 
 For VS Code Live Server, start `scripts/local_chat_share_proxy.py` first. The frontend detects `localhost` and uses `http://127.0.0.1:8787` as its proxy base automatically.
 
-## GitHub Pages (Repository Root Mode)
-
-1. Push this repo to GitHub.
-2. In GitHub repo settings, open `Pages`.
-3. Set source to `Deploy from a branch`.
-4. Select branch `main` (or your default branch), folder `/ (root)`.
-5. Save and wait for deployment.
-6. Open your Pages URL. It will load the app via root `index.html` redirect to `frontend/index.html`.
 
 ## Proxy Setup
 
-After Pages is live, deploy the Cloudflare Worker from `frontend/worker/cloudflare-worker.js`.
-
-Then set the fixed proxy in `frontend/index.html`:
-
-`const FIXED_PROXY_BASE = "https://chat-share-proxy.<subdomain>.workers.dev";`
-
 For local testing, pages served on `localhost` still use local proxy (`http://127.0.0.1:8787`) automatically.
-Then redeploy GitHub Pages. End users do not need to configure proxy settings in the UI.
+
+## Frontend Screenshot
+<img width="1904" height="948" alt="image" src="https://github.com/user-attachments/assets/23055b30-eb1a-4d64-a84c-3c74f09c1d1b" />
+
+
